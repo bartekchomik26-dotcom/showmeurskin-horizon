@@ -1,0 +1,236 @@
+[mod]
+id = "showmeyourskin"
+version = "2.0.4"
+priority = 100
+
+# Nightly 2026-11-13 (nightly-source/2026-11-13-9f42064). Armour, elytra, head
+# items, shields and the pumpkin overlay are drawn by game functions the named
+# hook catalog doesn't cover, so the bundle pins this commit.
+[compatibility]
+horizon_revision = "9f42064c11efe7ef3e5ed2baad7ddc2a3b36eea0"
+
+[[module]]
+id = "glue"
+file = "crates/horizon-client/src/game.rs"
+name = "showmeyourskin"
+source = "glue.rs"
+
+# ---- the mod's own hook points: list, keys, frame, the menu
+
+[[injection]]
+id = "list"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_mods"
+helper = "h_list.rs"
+bindings = [
+  { name = "mods", ty = "&mut Vec<horizon_client::mod_api::NativeMod>", value = "&mut *mods" },
+]
+
+[[injection]]
+id = "settings"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_settings"
+helper = "h_settings.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "mod_id", ty = "&str", value = "mod_id" },
+  { name = "buttons", ty = "&mut Vec<String>", value = "&mut *buttons" },
+]
+
+[[injection]]
+id = "settings-click"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_settings_click"
+helper = "h_settings_click.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "mod_id", ty = "&str", value = "mod_id" },
+  { name = "button", ty = "usize", value = "button" },
+]
+
+[[injection]]
+id = "key"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_key"
+helper = "h_key.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "key", ty = "&str", value = "key" },
+  { name = "pressed", ty = "bool", value = "pressed" },
+]
+
+[[injection]]
+id = "frame"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_frame"
+helper = "h_frame.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
+id = "screen-draw"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_screen_render_post"
+helper = "h_screen_draw.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "batch", ty = "&mut horizon_client::hud::HudBatch", value = "&mut *batch" },
+  { name = "screen", ty = "&horizon_client::mod_api::NativeScreenView<'_>", value = "screen" },
+]
+
+[[injection]]
+id = "screen-click"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_screen_mouse_button_pressed_pre"
+helper = "h_screen_click.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "screen", ty = "&horizon_client::mod_api::NativeScreenView<'_>", value = "screen" },
+  { name = "button", ty = "i32", value = "button" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+[[injection]]
+id = "screen-drag"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_screen_mouse_dragged_pre"
+helper = "h_screen_drag.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "screen", ty = "&horizon_client::mod_api::NativeScreenView<'_>", value = "screen" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+[[injection]]
+id = "screen-release"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_screen_mouse_button_released_pre"
+helper = "h_screen_release.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "screen", ty = "&horizon_client::mod_api::NativeScreenView<'_>", value = "screen" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+[[injection]]
+id = "screen-scroll"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_screen_mouse_scrolled_pre"
+helper = "h_screen_scroll.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "scroll", ty = "[f64; 2]", value = "scroll" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+# ---- what gets hidden
+
+# HumanoidArmorLayer: the local player's armour (third person, the inventory preview).
+[[injection]]
+id = "armor-own"
+kind = "RETURN"
+target = "horizon_client::game::armor_stands::Game<'_>::player_armor_layers"
+helper = "h_armor_own.rs"
+bindings = [
+  { name = "value", ty = "Vec<(&Part, [f32; 4], u32, u32, bool)>", value = "$value" },
+]
+
+[[injection]]
+id = "armor-own-start"
+kind = "HEAD"
+target = "horizon_client::game::armor_stands::Game<'_>::player_armor_layers"
+helper = "h_armor_own_start.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+]
+
+# HumanoidArmorLayer: other players' armour.
+[[injection]]
+id = "armor-worn"
+kind = "RETURN"
+target = "horizon_client::game::armor_stands::Game<'_>::worn_armor_layers"
+helper = "h_armor_worn.rs"
+bindings = [
+  { name = "value", ty = "Vec<(&Part, [f32; 4], u32, u32, bool)>", value = "$value" },
+]
+
+[[injection]]
+id = "armor-worn-start"
+kind = "HEAD"
+target = "horizon_client::game::armor_stands::Game<'_>::worn_armor_layers"
+helper = "h_armor_worn_start.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "mob", ty = "&horizon_client::mobs::Mob", value = "m" },
+]
+
+# WingsLayer on players: hidden, or drawn without its glint.
+[[injection]]
+id = "elytra"
+kind = "HEAD"
+cancellable = true
+target = "horizon_client::game::perspective::Game<'_>::player_elytra_geometry"
+helper = "h_elytra.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "mob", ty = "&horizon_client::mobs::Mob", value = "m" },
+  { name = "chest", ty = "Option<&str>", value = "chest" },
+  { name = "camera", ty = "glam::DVec3", value = "camera" },
+  { name = "partial", ty = "f32", value = "partial" },
+  { name = "light", ty = "u32", value = "light" },
+  { name = "out", ty = "&mut Vec<horizon_client::mesher::Vertex>", value = "&mut *out" },
+]
+
+# CustomHeadLayer on players: skulls, pumpkins and blocks worn on the head (the hat).
+[[injection]]
+id = "hat"
+kind = "HEAD"
+cancellable = true
+target = "horizon_client::game::mob_blocks::Game<'_>::head_item_geometry"
+helper = "h_hat.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "mob", ty = "&horizon_client::mobs::Mob", value = "mob" },
+]
+
+# A shield's model, resolved for a hand: emptied when hidden, its glint taken off.
+[[injection]]
+id = "shield"
+kind = "RETURN"
+target = "horizon_client::game::item_draw::Game<'_>::resolve_item_in_hand"
+helper = "h_shield.rs"
+bindings = [
+  { name = "value", ty = "ItemRenderState", value = "$value" },
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "stack", ty = "&horizon_client::items::ItemStack", value = "stack" },
+  { name = "display", ty = "horizon_assets::item_model::DisplayContext", value = "display" },
+  { name = "owner", ty = "Option<&horizon_assets::item_model::OwnerState>", value = "owner" },
+]
+
+# Name tags (API 372's hook point).
+[[injection]]
+id = "name-tag"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_render_name_tag"
+helper = "h_name_tag.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+  { name = "entity_id", ty = "u32", value = "entity_id" },
+  { name = "kind", ty = "&str", value = "kind" },
+  { name = "visible", ty = "&mut bool", value = "&mut *visible" },
+]
+
+# Hud.extractCameraOverlays: no pumpkin blur when the hat is hidden.
+[[injection]]
+id = "pumpkin"
+kind = "MODIFY_VARIABLE"
+target = "horizon_client::game::render_tick::Game<'_>::screen_quads"
+variable = { name = "overlays", ordinal = 0, at = "STORE" }
+require = 1
+ordinal = 0
+helper = "h_pumpkin.rs"
+bindings = [
+  { name = "value", ty = "hud_overlays::CameraOverlays", value = "$value" },
+  { name = "game", ty = "&crate::game::Game<'_>", value = "self" },
+]
